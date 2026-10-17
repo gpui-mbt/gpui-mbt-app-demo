@@ -13,7 +13,7 @@ shared `src/native` session.
   hit testing.
 - `f4ah6o/gpui/platform/windows_app` — reusable `WindowsTextPainter`,
   `WindowsTextFieldAdapter`, `CursorState` and `run_main_window` (currently on
-  gpui.mbt main, not yet in the published 0.8.0 package).
+  the stacked gpui PR #112 branch, not yet in the published 0.8.0 package).
 - `src/native` — shared `DemoSession`, input handling, scene composition and
   smoke driver.
 
