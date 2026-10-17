@@ -13,6 +13,8 @@ a browser Canvas 2D application. Linux and Windows entries are next.
 
 ![Web overview](docs/screenshots/web-overview.png)
 
+Live web demo: **https://gpui-mbt.github.io/gpui-mbt-app-demo/**
+
 ## Status
 
 | Platform | Status | Entry | Host |
