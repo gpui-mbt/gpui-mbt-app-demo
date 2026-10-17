@@ -59,6 +59,12 @@ jobs:
         run: ./scripts/build_web.sh
       - name: Run web smoke
         run: node scripts/smoke_web.mjs
+      - name: Upload web demo
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: web-demo
+          path: web
+          if-no-files-found: error
       - name: Upload web screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
