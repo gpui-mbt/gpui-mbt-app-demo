@@ -1,21 +1,11 @@
 import {
   "f4ah6o/gpui/app" @gpui_app,
-  "f4ah6o/gpui/capability",
-  "f4ah6o/gpui/controls/button",
-  "f4ah6o/gpui/controls/command_palette",
-  "f4ah6o/gpui/controls/text_field",
   "f4ah6o/gpui/diagnostics",
-  "f4ah6o/gpui/element",
   "f4ah6o/gpui/platform",
   "f4ah6o/gpui/platform/macos",
   "f4ah6o/gpui/platform/macos_app",
   "f4ah6o/gpui/platform/testing",
-  "f4ah6o/gpui/primitives",
-  "f4ah6o/gpui/scene",
-  "f4ah6o/gpui/text",
-  "f4ah6o/gpui/text_layout",
-  "gpui_mbt/app_demo/src/model",
-  "gpui_mbt/app_demo/src/scene" @demo_scene,
+  "gpui_mbt/app_demo/src/native",
   "moonbitlang/core/env",
 }
 

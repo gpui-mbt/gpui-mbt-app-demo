@@ -127,3 +127,55 @@ jobs:
         run: |
           moon check --target js --deny-warn src/model src/scene src/web
           moon test --target js --deny-warn src/model src/scene
+
+  windows-app:
+    name: Windows app build and smoke
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check out gpui.mbt Windows runtime
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: gpui-mbt/gpui.mbt
+          ref: ${{ github.event.inputs.gpui-ref || 'main' }}
+          path: .gpui
+          persist-credentials: false
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+      - uses: hustcer/setup-moonbit@1522f9aef02a8ca0187dfc00a41f5dd6b16750f7 # v1.23
+        with:
+          version: 0.10.15+943464bfa
+          core-version: 0.10.15+943464bfa
+      - name: Update registry
+        shell: pwsh
+        run: moon update
+      - name: Prepare the Windows workspace
+        shell: pwsh
+        run: |
+          $relative = [System.IO.Path]::GetRelativePath((Resolve-Path windows-app).Path, (Resolve-Path .gpui).Path).Replace('\', '/')
+          @('members = [', '  ".",', '  "..",', "  `"$relative`",", ']') | Set-Content -Path windows-app/moon.work -Encoding ascii
+      - name: Check and test shared packages
+        shell: pwsh
+        run: |
+          moon check --target native --deny-warn src/model src/scene src/native src/app
+          moon test --target native --deny-warn src/model src/scene
+          moon fmt --check src/model src/scene src/native src/app
+          Push-Location windows-app
+          try {
+            moon check --target native --deny-warn src/windows
+            moon fmt --check src/windows
+          } finally {
+            Pop-Location
+          }
+      - name: Build and smoke the Windows app
+        shell: pwsh
+        run: ./scripts/build_windows.ps1 -Mode smoke -GpuiRoot .gpui
+      - name: Upload Windows smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-smoke
+          path: build/windows-smoke
+          if-no-files-found: warn

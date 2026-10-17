@@ -7,17 +7,10 @@ fn DemoSession::build_scene(
     Err(error) => return Err(error)
     Ok(value) => value
   }
-  let painter = self.painter
+  let text_ops = self.platform.text
   let measure = fn(text : String, size : Double) {
-    match painter.measure(text, size) {
-      Ok(value) =>
-        @demo_scene.SceneTextMetrics::new(value.width, value.line_height)
-      Err(_) =>
-        @demo_scene.SceneTextMetrics::new(
-          text.length().to_double() * size * 0.55,
-          size * 1.25,
-        )
-    }
+    let metrics = (text_ops.measure_text)(text, size)
+    @demo_scene.SceneTextMetrics::new(metrics.width, metrics.line_height)
   }
   let inputs = @demo_scene.SceneInputs::new(
     self.state,
@@ -29,11 +22,17 @@ fn DemoSession::build_scene(
     self.hovered,
     self.pointer,
     measure,
-    "AppKit + Metal",
+    self.platform.backend_label,
   )
   match inputs.build_scene(viewport, self.scale) {
     Err(_) =>
-      Err(demo_app_error("scene", "SceneBuilder could not compose the demo"))
+      Err(
+        demo_app_error(
+          self.platform,
+          "scene",
+          "SceneBuilder could not compose the demo",
+        ),
+      )
     Ok(value) => Ok(value)
   }
 }

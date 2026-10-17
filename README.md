@@ -2,13 +2,15 @@
 
 Proof-of-concept applications built with [gpui.mbt](https://github.com/gpui-mbt/gpui.mbt).
 The same portable model and scene compose into a macOS AppKit + Metal window and
-a browser Canvas 2D application. Linux and Windows entries are next.
+a browser Canvas 2D application, and a Windows Win32 + D3D11 entry. Linux is next.
 
 ![macOS overview](docs/screenshots/macos-overview.png)
 
 ![Web overview](docs/screenshots/web-overview.png)
 
 Live web demo: **https://gpui-mbt.github.io/gpui-mbt-app-demo/**
+
+![Windows overview](docs/screenshots/windows-overview.png)
 
 ## Status
 
@@ -17,7 +19,7 @@ Live web demo: **https://gpui-mbt.github.io/gpui-mbt-app-demo/**
 | macOS | Working | `src/app` | AppKit + Metal + CoreText |
 | Web | Working preview | `src/web` | Canvas 2D + DOM input |
 | Linux | Planned | TBD | Wayland/X11 + GLES |
-| Windows | Planned | TBD | Win32 + D3D11 |
+| Windows | Working preview | `windows-app/src/windows` | Win32 + D3D11 + DirectWrite |
 
 This is a demo repository, not a production support claim. See
 [Platform status](docs/platforms.md) for details.
@@ -77,6 +79,23 @@ set `GPUI_ROOT` when the checkout is not at `../gpui.mbt`:
 ```sh
 GPUI_ROOT=/path/to/gpui.mbt ./build.sh --build
 ```
+
+## Windows
+
+Windows builds use Win32 + D3D11 + DirectWrite through `windows-app` and the
+shared `src/native` controller. `windows-app` is a separate MoonBit module so
+the published macOS/Web lane stays independent of the unreleased
+`platform/windows_app` helper:
+
+```powershell
+pwsh -NoProfile -File scripts/build_windows.ps1 -Mode build -GpuiRoot ..\gpui.mbt
+pwsh -NoProfile -File scripts/build_windows.ps1 -Mode smoke -GpuiRoot ..\gpui.mbt
+```
+
+The smoke writes PPM frames to `build/windows-smoke/`. It uses the backend's
+synthetic event queue (`GPUI_NATIVE_E2E=1`) and frame readback
+(`GPUI_WINDOWS_READBACK=1`); it is not physical-input or IME evidence. See
+[Windows demo](docs/windows.md) for details and limits.
 
 ## Web
 
@@ -139,7 +158,9 @@ integration are covered by the two smoke flows.
 ```text
 src/model/     portable state, intents, theme and responsive layout
 src/scene/     portable SceneBuilder composition
-src/app/       macOS AppKit/Metal host, input adapter and smoke driver
+src/native/    shared session, input, scene adapter and smoke driver
+src/app/       thin macOS AppKit/Metal host and platform ops
+windows-app/   separate Windows module (Win32/D3D11/DirectWrite entry)
 src/web/       browser controller and string/JSON ABI
 web/           static HTML/CSS/JS host and Canvas 2D renderer
 scripts/       local dependency override, app/web build and smoke helpers
@@ -162,6 +183,8 @@ is its downstream demo/consumer; see
   browser font shaping. Web has no clipboard bridge or IME.
 - The scene subset is quads, bounded text runs, affine transforms, opacity and
   rectangle clips. Rounded corners, gradients, images and paths are unused.
-- Linux Wayland/X11 and Windows D3D11 entries are not implemented yet.
+- Windows uses a synthetic input queue for smoke; physical keyboard/IME and
+  UI Automation are not implemented. The demo uses one HWND.
+- Linux Wayland/X11 entries are not implemented yet.
 - macOS native builds still require a `gpui.mbt` checkout for the Objective-C
   shim sources; the MoonBit APIs themselves come from published `0.8.0`.

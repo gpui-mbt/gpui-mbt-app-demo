@@ -5,7 +5,9 @@ The demo separates portable application behavior from host adapters.
 ```text
 src/model/     DemoState, intents, theme, responsive layout, widget IDs
 src/scene/     portable frame composition over SceneBuilder
-src/app/       macOS AppKit host, input adapter, smoke driver
+src/native/    shared session, input, scene adapter, smoke driver
+src/app/       thin macOS AppKit host and platform ops
+windows-app/   separate Windows module (Win32/D3D11/DirectWrite)
 src/web/       browser controller, input bridge and Canvas 2D host
 scripts/       local dependency override, app builder, web build and smoke
 ```
@@ -35,7 +37,16 @@ subset.
 ## Host adapters
 
 The macOS entry uses `platform/macos_app` for CoreText measurement, TextField
-admission/hit testing, cursor state and the `app.WindowView` loop.
+admission/hit testing, cursor state and the `app.WindowView` loop. `src/native`
+owns the shared `DemoSession` and receives text, cursor, clipboard, synthetic
+input, frame capture and optional accessibility operations through
+`DemoPlatform`.
+
+The Windows entry lives in a separate `windows-app` module. It uses
+`platform/windows_app` for DirectWrite measurement, TextField admission/hit
+testing, cursor state and window startup. Its `DemoPlatform` supplies the same
+operations and no accessibility bridge. The separate module keeps unreleased
+Windows APIs out of the published `gpui_mbt/app_demo` dependency graph.
 
 The web entry owns a MoonBit `WebController`, exposes a small string/JSON ABI
 with `#export_name`, and runs without a bundler. `scripts/build_web.sh` compiles

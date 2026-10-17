@@ -1,0 +1,14 @@
+import {
+  "f4ah6o/gpui/app" @gpui_app,
+  "f4ah6o/gpui/diagnostics",
+  "f4ah6o/gpui/platform",
+  "f4ah6o/gpui/platform/testing",
+  "f4ah6o/gpui/windows" @gpui_windows,
+  "f4ah6o/gpui/platform/windows_app",
+  "gpui_mbt/app_demo/src/native",
+  "moonbitlang/core/env",
+}
+
+pkgtype(kind: "executable")
+
+supported_targets = "native"

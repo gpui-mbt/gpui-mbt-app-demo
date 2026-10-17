@@ -68,8 +68,7 @@ fn demo_key_letter_meta(
       modifiers~,
       repeat=_
     ) =>
-      modifiers.meta() &&
-      !modifiers.control() &&
+      (modifiers.meta() || modifiers.control()) &&
       !modifiers.alt() &&
       value.to_lower() == letter
     _ => false
@@ -104,7 +103,7 @@ fn DemoSession::handle_key(
   // Host-level quit/close shortcuts take precedence, even while a palette is open.
   if demo_key_letter_meta(input, "q") {
     self.closing = true
-    match self.host.request_exit() {
+    match (self.platform.host.request_exit)() {
       Err(error) =>
         self.state.set_status("Exit failed: " + error.code().label())
       Ok(_) => self.state.set_status("Quit requested")
@@ -113,7 +112,7 @@ fn DemoSession::handle_key(
   }
   if demo_key_letter_meta(input, "w") {
     self.closing = true
-    match self.host.request_close(self.window) {
+    match (self.platform.host.request_close)() {
       Err(error) =>
         self.state.set_status("Close failed: " + error.code().label())
       Ok(_) => self.state.set_status("Close requested")
@@ -205,7 +204,9 @@ fn DemoSession::handle_note_key(
   let hit = self.palette_hit()
   let handled = match self.note.handle_input(event, measure, admit, hit) {
     Err(_) =>
-      return Err(demo_app_error("note_input", "TextField rejected input"))
+      return Err(
+        demo_app_error(self.platform, "note_input", "TextField rejected input"),
+      )
     Ok(value) => value
   }
   let (candidate, action) = handled
@@ -591,7 +592,7 @@ fn DemoSession::apply_cursor(
       None => @platform.Arrow
     }
   }
-  match self.cursor.apply(self.host, cursor) {
+  match (self.platform.host.set_cursor)(cursor) {
     Err(error) => {
       self.state.set_status("Cursor error: " + error.code().label())
       Ok(())
