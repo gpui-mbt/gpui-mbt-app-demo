@@ -1,5 +1,10 @@
 # gpui-mbt-app-demo
 
+> **Development preview.** The reusable `app` / `SceneBuilder` /
+> `platform/macos_app` APIs are not in a published gpui.mbt release yet. Until
+> the next release, clone `gpui.mbt` as a sibling and run
+> `./scripts/use-local-gpui.sh` before building.
+
 Proof-of-concept applications built with [gpui.mbt](https://github.com/gpui-mbt/gpui.mbt).
 The same portable model and scene compose into a macOS AppKit + Metal window and
 a browser Canvas 2D application. Linux and Windows entries are next.
