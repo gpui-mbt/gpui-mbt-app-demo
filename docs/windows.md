@@ -12,8 +12,8 @@ shared `src/native` session.
 - `f4ah6o/gpui/platform/windows_text` — DirectWrite measurement, admission and
   hit testing.
 - `f4ah6o/gpui/platform/windows_app` — reusable `WindowsTextPainter`,
-  `WindowsTextFieldAdapter`, `CursorState` and `run_main_window` (currently on
-  gpui.mbt main after PR #112, not yet in the published 0.8.0 package).
+  `WindowsTextFieldAdapter`, `CursorState` and `run_main_window` from the
+  published 0.9.0 package.
 - `src/native` — shared `DemoSession`, input handling, scene composition and
   smoke driver.
 
@@ -22,15 +22,15 @@ shared `src/native` session.
 From a Developer PowerShell for VS 2022:
 
 ```powershell
-./scripts/use-local-gpui.sh ..\\gpui.mbt
-pwsh -NoProfile -File scripts/build_windows.ps1 -Mode build -GpuiRoot ..\\gpui.mbt
-pwsh -NoProfile -File scripts/build_windows.ps1 -Mode run   -GpuiRoot ..\\gpui.mbt
-pwsh -NoProfile -File scripts/build_windows.ps1 -Mode smoke -GpuiRoot ..\\gpui.mbt
+pwsh -NoProfile -File scripts/build_windows.ps1 -Mode build
+pwsh -NoProfile -File scripts/build_windows.ps1 -Mode run
+pwsh -NoProfile -File scripts/build_windows.ps1 -Mode smoke
 ```
 
-The script creates a gitignored `windows-app/moon.work` pointing at the gpui.mbt
-checkout, checks that `cl.exe` is available, builds `windows-app/src/windows`,
-and writes smoke artifacts under `build/windows-smoke/`.
+The script creates a gitignored `windows-app/moon.work` that includes the
+sibling demo module, checks that `cl.exe` is available, builds
+`windows-app/src/windows`, and writes smoke artifacts under
+`build/windows-smoke/`. Pass `-GpuiRoot` to add a local gpui.mbt checkout.
 
 ## Smoke and limits
 
@@ -46,5 +46,5 @@ the same scenario as macOS/Web through the event queue:
 
 This is event-queue and frame-readback evidence, not proof of physical input,
 IME, UI Automation, multi-window behavior or DPI-transition correctness. The
-demo uses a single HWND. The Windows lane tracks gpui.mbt main until the next
-release contains `platform/windows_app`; see [release](release.md).
+demo uses a single HWND. The Windows lane uses the published 0.9.0 package; see
+[release](release.md).

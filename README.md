@@ -47,7 +47,7 @@ This is a demo repository, not a production support claim. See
 
 ## Dependency policy
 
-`moon.mod` pins the published `f4ah6o/gpui@0.8.0` package. A normal web build
+`moon.mod` pins the published `f4ah6o/gpui@0.9.0` package. A normal web build
 uses that package directly.
 
 For framework development, opt in to a gitignored workspace override:
@@ -72,7 +72,7 @@ published package again. CI runs a published-package lane on every push and a
 ```
 
 The bundle is `build/GpuiMacDemo.app`; logs and PID data are next to it. The
-MoonBit packages resolve from the published `0.8.0` dependency; native builds
+MoonBit packages resolve from the published `0.9.0` dependency; native builds
 additionally need the gpui.mbt Objective-C shim sources. Pass `--gpui-root` or
 set `GPUI_ROOT` when the checkout is not at `../gpui.mbt`:
 
@@ -83,14 +83,15 @@ GPUI_ROOT=/path/to/gpui.mbt ./build.sh --build
 ## Windows
 
 Windows builds use Win32 + D3D11 + DirectWrite through `windows-app` and the
-shared `src/native` controller. `windows-app` is a separate MoonBit module so
-the published macOS/Web lane stays independent of the unreleased
-`platform/windows_app` helper:
+shared `src/native` controller. The Windows module consumes the published
+`platform/windows_app` package:
 
 ```powershell
-pwsh -NoProfile -File scripts/build_windows.ps1 -Mode build -GpuiRoot ..\gpui.mbt
-pwsh -NoProfile -File scripts/build_windows.ps1 -Mode smoke -GpuiRoot ..\gpui.mbt
+pwsh -NoProfile -File scripts/build_windows.ps1 -Mode build
+pwsh -NoProfile -File scripts/build_windows.ps1 -Mode smoke
 ```
+
+Pass `-GpuiRoot` only when testing a local gpui.mbt checkout.
 
 The smoke writes PPM frames to `build/windows-smoke/`. It uses the backend's
 synthetic event queue (`GPUI_NATIVE_E2E=1`) and frame readback
@@ -187,4 +188,4 @@ is its downstream demo/consumer; see
   UI Automation are not implemented. The demo uses one HWND.
 - Linux Wayland/X11 entries are not implemented yet.
 - macOS native builds still require a `gpui.mbt` checkout for the Objective-C
-  shim sources; the MoonBit APIs themselves come from published `0.8.0`.
+  shim sources; the MoonBit APIs themselves come from published `0.9.0`.
