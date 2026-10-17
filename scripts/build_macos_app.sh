@@ -103,6 +103,14 @@ done
 }
 ROOT="$(cd "$ROOT" && pwd)"
 GPUI_ROOT="$(cd "$GPUI_ROOT" && pwd)"
+case "$NAME" in
+  */*|.|..) echo 'The app name must be a single filename.' >&2; exit 2 ;;
+esac
+case "$PACKAGE" in
+  /*) PACKAGE_ROOT="$(cd "$PACKAGE" && pwd)" ;;
+  *) PACKAGE_ROOT="$(cd "$ROOT/$PACKAGE" && pwd)" ;;
+esac
+PACKAGE_KEY="$(python3 -c 'import hashlib, os, sys; print(hashlib.sha256(os.fsencode(sys.argv[1])).hexdigest())' "$PACKAGE_ROOT")"
 [[ -f "$ROOT/moon.work" ]] || {
   echo "missing $ROOT/moon.work; the app must include the gpui.mbt checkout as a workspace member" >&2
   exit 2
@@ -124,7 +132,7 @@ APP_BINARY="$APP_BUNDLE/Contents/MacOS/$NAME"
 APP_LIBRARY="$APP_BUNDLE/Contents/Frameworks/libgpui_macos.dylib"
 PID_FILE="$TARGET_DIR/$NAME.pid"
 LOG_FILE="$TARGET_DIR/$NAME.log"
-MOON_TARGET_DIR="$TARGET_DIR/moon"
+MOON_TARGET_DIR="$TARGET_DIR/moon/$PACKAGE_KEY"
 SMOKE_DIR="$TARGET_DIR/smoke"
 
 mkdir -p "$TARGET_DIR"
@@ -152,20 +160,18 @@ SOURCES=(
   "$GPUI_ROOT/platform/macos/accessibility.m"
   "$GPUI_ROOT/platform/macos_text/core_text.c"
 )
-if [[ ${#EXTRA_SOURCES[@]} -gt 0 ]]; then
-  for source in "${EXTRA_SOURCES[@]}"; do
-    SOURCES+=("$source")
-  done
-fi
+# Bash 3.2 treats an empty array as unset under nounset. The guarded expansion
+# keeps zero arguments empty and preserves every argument when the array is set.
+for source in ${EXTRA_SOURCES[@]+"${EXTRA_SOURCES[@]}"}; do
+  SOURCES+=("$source")
+done
 
 FRAMEWORKS=(
   AppKit QuartzCore Metal CoreText CoreGraphics CoreFoundation
 )
-if [[ ${#EXTRA_FRAMEWORKS[@]} -gt 0 ]]; then
-  for framework in "${EXTRA_FRAMEWORKS[@]}"; do
-    FRAMEWORKS+=("$framework")
-  done
-fi
+for framework in ${EXTRA_FRAMEWORKS[@]+"${EXTRA_FRAMEWORKS[@]}"}; do
+  FRAMEWORKS+=("$framework")
+done
 
 FRAMEWORK_ARGS=()
 for framework in "${FRAMEWORKS[@]}"; do
@@ -174,54 +180,54 @@ done
 
 xcrun clang "${CLANG_ARGS[@]}" "${SOURCES[@]}" "${FRAMEWORK_ARGS[@]}" -o "$APP_LIBRARY"
 
-run_app() {
-  if [[ ${#APP_ARGS[@]} -gt 0 ]]; then
-    "$APP_BINARY" "$@" "${APP_ARGS[@]}"
-  else
-    "$APP_BINARY" "$@"
-  fi
-}
-
 cd "$ROOT"
-moon build --target native --deny-warn --target-dir "$MOON_TARGET_DIR" "$PACKAGE"
-PACKAGE_BASENAME="$(basename "$PACKAGE")"
-MODULE_NAME="$(sed -n 's/^name[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' "$ROOT/moon.mod" | head -1)"
-EXECUTABLE="$MOON_TARGET_DIR/native/debug/build/$MODULE_NAME/$PACKAGE/$PACKAGE_BASENAME.exe"
-if [[ ! -f "$EXECUTABLE" ]]; then
-  EXECUTABLE="$(find "$MOON_TARGET_DIR/native/debug/build" -type f -name "$PACKAGE_BASENAME.exe" -not -path '*.dSYM/*' -print -quit)"
+# A package can stop being executable while Moon leaves its previous binary
+# in the cache. Require this build to produce the executable being packaged.
+if [[ -d "$MOON_TARGET_DIR/native/debug/build" ]]; then
+  find "$MOON_TARGET_DIR/native/debug/build" -type f -name '*.exe' \
+    -not -path '*.dSYM/*' -delete
 fi
-[[ -f "$EXECUTABLE" ]] || {
-  echo "could not find the built executable for package $PACKAGE under $MOON_TARGET_DIR" >&2
+moon build --target native --deny-warn --target-dir "$MOON_TARGET_DIR" "$PACKAGE_ROOT"
+EXECUTABLES=()
+EXECUTABLE_COUNT=0
+while IFS= read -r -d '' executable; do
+  EXECUTABLES+=("$executable")
+  EXECUTABLE_COUNT=$((EXECUTABLE_COUNT + 1))
+done < <(find "$MOON_TARGET_DIR/native/debug/build" -type f -name '*.exe' -not -path '*.dSYM/*' -print0)
+[[ "$EXECUTABLE_COUNT" == 1 ]] || {
+  echo "expected exactly one built executable for package $PACKAGE under $MOON_TARGET_DIR" >&2
   exit 1
 }
-cp "$EXECUTABLE" "$APP_BINARY"
+cp "${EXECUTABLES[0]}" "$APP_BINARY"
 
-cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-<key>CFBundleExecutable</key><string>$NAME</string>
-<key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
-<key>CFBundleName</key><string>$NAME</string>
-<key>CFBundlePackageType</key><string>APPL</string>
-<key>LSMinimumSystemVersion</key><string>13.0</string>
-<key>NSHighResolutionCapable</key><true/>
-<key>NSPrincipalClass</key><string>NSApplication</string>
-</dict></plist>
-PLIST
+python3 - "$APP_BUNDLE/Contents/Info.plist" "$NAME" "$BUNDLE_ID" <<'PY'
+import plistlib
+import sys
+
+with open(sys.argv[1], "wb") as stream:
+    plistlib.dump({
+        "CFBundleExecutable": sys.argv[2],
+        "CFBundleIdentifier": sys.argv[3],
+        "CFBundleName": sys.argv[2],
+        "CFBundlePackageType": "APPL",
+        "LSMinimumSystemVersion": "13.0",
+        "NSHighResolutionCapable": True,
+        "NSPrincipalClass": "NSApplication",
+    }, stream)
+PY
 
 case "$MODE" in
   build)
     echo "$APP_BUNDLE"
     ;;
   run)
-    GPUI_MACOS_LIBRARY="$APP_LIBRARY" run_app >"$LOG_FILE" 2>&1 &
+    GPUI_MACOS_LIBRARY="$APP_LIBRARY" "$APP_BINARY" ${APP_ARGS[@]+"${APP_ARGS[@]}"} >"$LOG_FILE" 2>&1 &
     APP_PID="$!"
     echo "$APP_PID" > "$PID_FILE"
     echo "Launched $APP_BUNDLE (pid $APP_PID); log: $LOG_FILE"
     ;;
   verify)
-    GPUI_MACOS_LIBRARY="$APP_LIBRARY" run_app >"$LOG_FILE" 2>&1 &
+    GPUI_MACOS_LIBRARY="$APP_LIBRARY" "$APP_BINARY" ${APP_ARGS[@]+"${APP_ARGS[@]}"} >"$LOG_FILE" 2>&1 &
     APP_PID="$!"
     echo "$APP_PID" > "$PID_FILE"
     sleep 1
@@ -240,7 +246,7 @@ case "$MODE" in
     mkdir -p "$SMOKE_DIR"
     set +e
     GPUI_SMOKE_DIR="$SMOKE_DIR/" GPUI_NATIVE_E2E=1 GPUI_MACOS_LIBRARY="$APP_LIBRARY" \
-      run_app --smoke >"$LOG_FILE" 2>&1
+      "$APP_BINARY" --smoke ${APP_ARGS[@]+"${APP_ARGS[@]}"} >"$LOG_FILE" 2>&1
     status=$?
     set -e
     for ppm in "$SMOKE_DIR"/*.ppm; do
