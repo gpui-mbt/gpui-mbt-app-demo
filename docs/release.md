@@ -10,11 +10,11 @@ package yet.
 2. Set the repository variable `GPUI_REF` to `main`:
    `gh variable set GPUI_REF --body main`.
 3. Re-run `Demo CI` and `./build.sh --smoke` / `node scripts/smoke_web.mjs`.
-4. Make the repository public:
-   `gh repo edit gpui-mbt/gpui-mbt-app-demo --visibility public --accept-visibility-change-consequences`.
-5. Enable GitHub Pages (or another static host) for `web/` after a public
-   visibility change. The portable-web CI job uploads `web-demo` as an artifact
-   in the meantime.
+4. Confirm the repository is public. It is currently public at
+   <https://github.com/gpui-mbt/gpui-mbt-app-demo>.
+5. Re-deploy the Pages workflow. Pages is already enabled at
+   <https://gpui-mbt.github.io/gpui-mbt-app-demo/>; the portable-web CI job also
+   uploads `web-demo` as an artifact.
 6. Keep the local `moon.work` override for framework development only.
 
 ## Native shim
