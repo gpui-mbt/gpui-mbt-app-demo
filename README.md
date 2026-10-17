@@ -1,10 +1,5 @@
 # gpui-mbt-app-demo
 
-> **Development preview.** The reusable `app` / `SceneBuilder` /
-> `platform/macos_app` APIs are not in a published gpui.mbt release yet. Until
-> the next release, clone `gpui.mbt` as a sibling and run
-> `./scripts/use-local-gpui.sh` before building.
-
 Proof-of-concept applications built with [gpui.mbt](https://github.com/gpui-mbt/gpui.mbt).
 The same portable model and scene compose into a macOS AppKit + Metal window and
 a browser Canvas 2D application. Linux and Windows entries are next.
@@ -46,24 +41,24 @@ This is a demo repository, not a production support claim. See
 - MoonBit toolchain (the repository is developed against `0.1.20261012`)
 - macOS 13+ and Xcode command-line tools for the native app
 - Node.js 22+ and Chrome/Chromium for the web smoke test
-- A sibling `../gpui.mbt` checkout while the next gpui.mbt release is pending
+- A `gpui.mbt` checkout for macOS native shim sources (not needed for web)
 
 ## Dependency policy
 
-`moon.mod` pins the published `f4ah6o/gpui` package. Until the release containing
-the reusable `app`, `SceneBuilder` and `platform/macos_app` APIs is available,
-development uses a gitignored workspace override:
+`moon.mod` pins the published `f4ah6o/gpui@0.8.0` package. A normal web build
+uses that package directly.
+
+For framework development, opt in to a gitignored workspace override:
 
 ```sh
 ./scripts/use-local-gpui.sh          # sibling ../gpui.mbt
 ./scripts/use-local-gpui.sh PATH     # explicit checkout
 ```
 
-The override writes `moon.work`, which is ignored by git. `build.sh` and
-`scripts/build_web.sh` create it automatically when a sibling checkout exists.
-CI checks out `gpui.mbt` explicitly and uses the same override. The
-[release and publication checklist](docs/release.md) tracks the switch to the
-published version.
+The override writes `moon.work`, which is ignored by git. Remove it to test the
+published package again. CI runs a published-package lane on every push and a
+`gpui.mbt` main lane on manual dispatch. The
+[release and publication checklist](docs/release.md) tracks future pins.
 
 ## macOS
 
@@ -74,9 +69,10 @@ published version.
 ./build.sh --smoke    # synthetic input + pixel checks + PNG artifacts
 ```
 
-The bundle is `build/GpuiMacDemo.app`; logs and PID data are next to it. Native
-builds need the gpui.mbt Objective-C shim sources, so pass `--gpui-root` or set
-`GPUI_ROOT` when the checkout is not at `../gpui.mbt`:
+The bundle is `build/GpuiMacDemo.app`; logs and PID data are next to it. The
+MoonBit packages resolve from the published `0.8.0` dependency; native builds
+additionally need the gpui.mbt Objective-C shim sources. Pass `--gpui-root` or
+set `GPUI_ROOT` when the checkout is not at `../gpui.mbt`:
 
 ```sh
 GPUI_ROOT=/path/to/gpui.mbt ./build.sh --build
@@ -167,5 +163,5 @@ is its downstream demo/consumer; see
 - The scene subset is quads, bounded text runs, affine transforms, opacity and
   rectangle clips. Rounded corners, gradients, images and paths are unused.
 - Linux Wayland/X11 and Windows D3D11 entries are not implemented yet.
-- macOS native builds currently require a `gpui.mbt` checkout for the native
-  shim; the published package story will be simplified after the next release.
+- macOS native builds still require a `gpui.mbt` checkout for the Objective-C
+  shim sources; the MoonBit APIs themselves come from published `0.8.0`.

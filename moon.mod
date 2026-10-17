@@ -9,5 +9,5 @@ license = "Apache-2.0"
 description = "Cross-platform proof-of-concept applications built with gpui.mbt."
 
 import {
-  "f4ah6o/gpui@0.7.2",
+  "f4ah6o/gpui@0.8.0",
 }

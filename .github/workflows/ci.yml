@@ -29,13 +29,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Check out gpui.mbt
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: gpui-mbt/gpui.mbt
-          ref: ${{ github.event.inputs.gpui-ref || vars.GPUI_REF || 'main' }}
-          path: .gpui
-          persist-credentials: false
       - uses: hustcer/setup-moonbit@1522f9aef02a8ca0187dfc00a41f5dd6b16750f7 # v1.23
         with:
           version: 0.10.15+943464bfa
@@ -48,8 +41,6 @@ jobs:
           moon version --all
           node --version
           "$CHROME_BIN" --version
-      - name: Use local gpui.mbt checkout
-        run: ./scripts/use-local-gpui.sh .gpui
       - name: Check and test portable packages
         run: |
           moon check --target js --deny-warn src/model src/scene src/web
@@ -85,7 +76,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: gpui-mbt/gpui.mbt
-          ref: ${{ github.event.inputs.gpui-ref || vars.GPUI_REF || 'main' }}
+          ref: ${{ github.event.inputs.gpui-ref || 'main' }}
           path: .gpui
           persist-credentials: false
       - uses: hustcer/setup-moonbit@1522f9aef02a8ca0187dfc00a41f5dd6b16750f7 # v1.23
@@ -94,8 +85,6 @@ jobs:
           core-version: 0.10.15+943464bfa
       - name: Show toolchain
         run: moon version --all
-      - name: Use local gpui.mbt checkout
-        run: ./scripts/use-local-gpui.sh .gpui
       - name: Test portable packages
         run: moon test --target native --deny-warn src/model src/scene
       - name: Build app bundle
@@ -106,3 +95,30 @@ jobs:
           name: GpuiMacDemo
           path: build/GpuiMacDemo.app
           if-no-files-found: error
+
+  gpui-main:
+    name: gpui.mbt main lane
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check out gpui.mbt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: gpui-mbt/gpui.mbt
+          ref: ${{ github.event.inputs.gpui-ref || 'main' }}
+          path: .gpui
+          persist-credentials: false
+      - uses: hustcer/setup-moonbit@1522f9aef02a8ca0187dfc00a41f5dd6b16750f7 # v1.23
+        with:
+          version: 0.10.15+943464bfa
+          core-version: 0.10.15+943464bfa
+      - name: Use gpui.mbt main as a workspace member
+        run: ./scripts/use-local-gpui.sh .gpui
+      - name: Check portable packages against gpui.mbt main
+        run: |
+          moon check --target js --deny-warn src/model src/scene src/web
+          moon test --target js --deny-warn src/model src/scene

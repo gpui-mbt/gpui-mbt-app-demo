@@ -13,9 +13,9 @@ usage: build_macos_app.sh --root DIR --name APP --bundle-id ID --package PKG
                           [--test-hooks] [--native-source FILE]... [--framework NAME]...
                           [-- APP_ARGS...]
 
-Builds a MoonBit package from a local gpui.mbt workspace member and packages it
-as a macOS .app bundle. The app root must contain a moon.work that includes the
-gpui.mbt checkout (normally "../gpui.mbt").
+Builds a MoonBit package and packages it as a macOS .app bundle. The app root
+must contain moon.mod. --gpui-root points at a gpui.mbt checkout for the native
+Objective-C/CoreText shim sources; a moon.work local override is optional.
 USAGE
   exit 2
 }
@@ -111,8 +111,8 @@ case "$PACKAGE" in
   *) PACKAGE_ROOT="$(cd "$ROOT/$PACKAGE" && pwd)" ;;
 esac
 PACKAGE_KEY="$(python3 -c 'import hashlib, os, sys; print(hashlib.sha256(os.fsencode(sys.argv[1])).hexdigest())' "$PACKAGE_ROOT")"
-[[ -f "$ROOT/moon.work" ]] || {
-  echo "missing $ROOT/moon.work; the app must include the gpui.mbt checkout as a workspace member" >&2
+[[ -f "$ROOT/moon.mod" ]] || {
+  echo "missing $ROOT/moon.mod" >&2
   exit 2
 }
 [[ -d "$GPUI_ROOT/platform/macos" ]] || {

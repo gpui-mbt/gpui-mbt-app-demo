@@ -1,21 +1,26 @@
 # Release and publication checklist
 
-The demo currently uses a pre-release gpui.mbt branch because the reusable
-`app`, `SceneBuilder` and `platform/macos_app` APIs are not in a published
-package yet.
+The demo pins **`f4ah6o/gpui@0.8.0`**. The reusable `app`, `SceneBuilder` and
+`platform/macos_app` APIs are published as of this release.
 
-## When gpui.mbt ships the APIs
+## Current lanes
 
-1. Update `moon.mod` to the published version (for example `0.7.3`).
-2. Set the repository variable `GPUI_REF` to `main`:
-   `gh variable set GPUI_REF --body main`.
-3. Re-run `Demo CI` and `./build.sh --smoke` / `node scripts/smoke_web.mjs`.
-4. Confirm the repository is public. It is currently public at
-   <https://github.com/gpui-mbt/gpui-mbt-app-demo>.
-5. Re-deploy the Pages workflow. Pages is already enabled at
-   <https://gpui-mbt.github.io/gpui-mbt-app-demo/>; the portable-web CI job also
-   uploads `web-demo` as an artifact.
-6. Keep the local `moon.work` override for framework development only.
+- **Published lane** (push/PR): resolves `0.8.0` from Mooncakes and runs the
+  portable checks plus the web smoke.
+- **gpui.mbt main lane** (manual dispatch): checks out `gpui.mbt`, creates a
+  local `moon.work`, and tests the demo against framework main.
+- **macOS lane**: uses published MoonBit packages and checks out `gpui.mbt`
+  only for the native Objective-C/CoreText shim sources.
+- **Pages**: deploys `web/` to <https://gpui-mbt.github.io/gpui-mbt-app-demo/>.
+
+## When bumping gpui.mbt
+
+1. Update `moon.mod` to the new published version.
+2. Run `moon update`, then `moon check/test` without `moon.work`.
+3. Re-run `./build.sh --smoke` and `node scripts/smoke_web.mjs`.
+4. Let CI and Pages redeploy.
+5. Keep the local override (`scripts/use-local-gpui.sh`) for framework
+   development only; remove `moon.work` before testing the published package.
 
 ## Native shim
 

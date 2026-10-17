@@ -11,8 +11,9 @@
 
 - `./build.sh` builds and launches `build/GpuiMacDemo.app`.
 - `./build.sh --smoke` runs synthetic input and writes 10 PNG/PPM frames.
-- Native builds currently use a `gpui.mbt` checkout for the Objective-C shim.
-  The demo builder accepts `--gpui-root` / `GPUI_ROOT`.
+- MoonBit packages resolve from published `f4ah6o/gpui@0.8.0`.
+- Native builds additionally use a `gpui.mbt` checkout for the Objective-C
+  shim. The demo builder accepts `--gpui-root` / `GPUI_ROOT`.
 
 ## Web
 
