@@ -11,7 +11,7 @@
 
 - `./build.sh` builds and launches `build/GpuiMacDemo.app`.
 - `./build.sh --smoke` runs synthetic input and writes 10 PNG/PPM frames.
-- MoonBit packages resolve from published `f4ah6o/gpui@0.8.0`.
+- MoonBit packages resolve from published `f4ah6o/gpui@0.9.0`.
 - Native builds additionally use a `gpui.mbt` checkout for the Objective-C
   shim. The demo builder accepts `--gpui-root` / `GPUI_ROOT`.
 
@@ -31,9 +31,8 @@
 - `scripts/build_windows.ps1 -Mode smoke` drives the synthetic event queue and
   frame readback; artifacts go to `build/windows-smoke/`.
 - Physical input, IME and UI Automation are not claimed. One HWND only.
-- `platform/windows_app` is on gpui.mbt main until the next release, so
-  `windows-app` uses its own local `moon.work` override. This keeps the
-  published macOS/Web module independent. See [Windows demo](windows.md).
+- `windows-app` uses its own local `moon.work` only to include the sibling demo
+  module; gpui.mbt 0.9.0 is resolved from Mooncakes. See [Windows demo](windows.md).
 
 ## Linux
 

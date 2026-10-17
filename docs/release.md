@@ -1,20 +1,20 @@
 # Release and publication checklist
 
-The demo pins **`f4ah6o/gpui@0.8.0`**. The reusable `app`, `SceneBuilder` and
-`platform/macos_app` APIs are published as of this release.
+The demo pins **`f4ah6o/gpui@0.9.0`**. The reusable `app`, `SceneBuilder`,
+`platform/macos_app` and `platform/windows_app` APIs are published as of this
+release.
 
 ## Current lanes
 
-- **Published lane** (push/PR): resolves `0.8.0` from Mooncakes and runs the
+- **Published lane** (push/PR): resolves `0.9.0` from Mooncakes and runs the
   portable checks plus the web smoke.
 - **gpui.mbt main lane** (manual dispatch): checks out `gpui.mbt`, creates a
   local `moon.work`, and tests the demo against framework main.
 - **macOS lane**: uses published MoonBit packages and checks out `gpui.mbt`
   only for the native Objective-C/CoreText shim sources.
 - **Pages**: deploys `web/` to <https://gpui-mbt.github.io/gpui-mbt-app-demo/>.
-- **Windows lane**: checks out gpui.mbt `main` (or the selected `gpui-ref`)
-  and creates `windows-app/moon.work` while `platform/windows_app` is not in a
-  published package.
+- **Windows lane**: resolves gpui.mbt 0.9.0 from Mooncakes and creates a
+  module-local `windows-app/moon.work` that includes the sibling demo module.
 
 ## When bumping gpui.mbt
 
@@ -27,13 +27,9 @@ The demo pins **`f4ah6o/gpui@0.8.0`**. The reusable `app`, `SceneBuilder` and
 
 ## Windows follow-up
 
-After a gpui.mbt release contains `platform/windows_app` (PR #112 is merged):
-
-
-1. Bump `moon.mod` to that release.
-2. Change the `windows-app` CI checkout from the feature branch to `main` and
-   remove the module-local `moon.work` override.
-3. Re-run the Windows smoke on a Windows runner and keep the artifacts.
+`platform/windows_app` is published in 0.9.0. The Windows lane now uses the
+published package. `-GpuiRoot` remains available for local framework
+development, but is not required.
 
 ## Native shim
 

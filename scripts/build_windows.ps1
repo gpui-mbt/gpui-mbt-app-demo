@@ -9,26 +9,21 @@ $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Module = Join-Path $Root "windows-app"
 
-if (-not $GpuiRoot) {
-  $GpuiRoot = Join-Path (Split-Path -Parent $Root) "gpui.mbt"
-}
-if (-not (Test-Path -LiteralPath (Join-Path $GpuiRoot "platform/windows_app/moon.pkg"))) {
-  throw "gpui.mbt with platform/windows_app is required; pass -GpuiRoot. Tried: $GpuiRoot"
-}
-$GpuiRoot = (Resolve-Path $GpuiRoot).Path
-
 if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) {
   throw "cl.exe was not found. Run this from a Developer PowerShell for VS 2022, or initialize vcvars64.bat first."
 }
 
-$relative = [System.IO.Path]::GetRelativePath($Module, $GpuiRoot).Replace('\', '/')
-@(
-  'members = [',
-  '  ".",',
-  '  "..",',
-  "  `"$relative`",",
-  ']'
-) | Set-Content -LiteralPath (Join-Path $Module "moon.work") -Encoding ascii
+$members = @('members = [', '  ".",', '  "..",')
+if ($GpuiRoot) {
+  if (-not (Test-Path -LiteralPath (Join-Path $GpuiRoot "platform/windows_app/moon.pkg"))) {
+    throw "local gpui.mbt with platform/windows_app was requested but not found: $GpuiRoot"
+  }
+  $GpuiRoot = (Resolve-Path $GpuiRoot).Path
+  $relative = [System.IO.Path]::GetRelativePath($Module, $GpuiRoot).Replace('\', '/')
+  $members += "  `"$relative`","
+}
+$members += ']'
+$members | Set-Content -LiteralPath (Join-Path $Module "moon.work") -Encoding ascii
 
 if (-not $TargetDir) {
   $TargetDir = Join-Path $Root "build"
