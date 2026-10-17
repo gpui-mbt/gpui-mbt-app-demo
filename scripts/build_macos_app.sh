@@ -152,16 +152,20 @@ SOURCES=(
   "$GPUI_ROOT/platform/macos/accessibility.m"
   "$GPUI_ROOT/platform/macos_text/core_text.c"
 )
-for source in "${EXTRA_SOURCES[@]}"; do
-  SOURCES+=("$source")
-done
+if [[ ${#EXTRA_SOURCES[@]} -gt 0 ]]; then
+  for source in "${EXTRA_SOURCES[@]}"; do
+    SOURCES+=("$source")
+  done
+fi
 
 FRAMEWORKS=(
   AppKit QuartzCore Metal CoreText CoreGraphics CoreFoundation
 )
-for framework in "${EXTRA_FRAMEWORKS[@]}"; do
-  FRAMEWORKS+=("$framework")
-done
+if [[ ${#EXTRA_FRAMEWORKS[@]} -gt 0 ]]; then
+  for framework in "${EXTRA_FRAMEWORKS[@]}"; do
+    FRAMEWORKS+=("$framework")
+  done
+fi
 
 FRAMEWORK_ARGS=()
 for framework in "${FRAMEWORKS[@]}"; do
@@ -169,6 +173,14 @@ for framework in "${FRAMEWORKS[@]}"; do
 done
 
 xcrun clang "${CLANG_ARGS[@]}" "${SOURCES[@]}" "${FRAMEWORK_ARGS[@]}" -o "$APP_LIBRARY"
+
+run_app() {
+  if [[ ${#APP_ARGS[@]} -gt 0 ]]; then
+    "$APP_BINARY" "$@" "${APP_ARGS[@]}"
+  else
+    "$APP_BINARY" "$@"
+  fi
+}
 
 cd "$ROOT"
 moon build --target native --deny-warn --target-dir "$MOON_TARGET_DIR" "$PACKAGE"
@@ -203,13 +215,13 @@ case "$MODE" in
     echo "$APP_BUNDLE"
     ;;
   run)
-    GPUI_MACOS_LIBRARY="$APP_LIBRARY" "$APP_BINARY" "${APP_ARGS[@]}" >"$LOG_FILE" 2>&1 &
+    GPUI_MACOS_LIBRARY="$APP_LIBRARY" run_app >"$LOG_FILE" 2>&1 &
     APP_PID="$!"
     echo "$APP_PID" > "$PID_FILE"
     echo "Launched $APP_BUNDLE (pid $APP_PID); log: $LOG_FILE"
     ;;
   verify)
-    GPUI_MACOS_LIBRARY="$APP_LIBRARY" "$APP_BINARY" "${APP_ARGS[@]}" >"$LOG_FILE" 2>&1 &
+    GPUI_MACOS_LIBRARY="$APP_LIBRARY" run_app >"$LOG_FILE" 2>&1 &
     APP_PID="$!"
     echo "$APP_PID" > "$PID_FILE"
     sleep 1
@@ -228,7 +240,7 @@ case "$MODE" in
     mkdir -p "$SMOKE_DIR"
     set +e
     GPUI_SMOKE_DIR="$SMOKE_DIR/" GPUI_NATIVE_E2E=1 GPUI_MACOS_LIBRARY="$APP_LIBRARY" \
-      "$APP_BINARY" --smoke "${APP_ARGS[@]}" >"$LOG_FILE" 2>&1
+      run_app --smoke >"$LOG_FILE" 2>&1
     status=$?
     set -e
     for ppm in "$SMOKE_DIR"/*.ppm; do
