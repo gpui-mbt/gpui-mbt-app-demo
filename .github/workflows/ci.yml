@@ -1,0 +1,100 @@
+name: Demo CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      gpui-ref:
+        description: gpui.mbt branch or commit to test against
+        required: false
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  portable-web:
+    name: Portable model/scene + web smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CHROME_BIN: google-chrome
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check out gpui.mbt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: gpui-mbt/gpui.mbt
+          ref: ${{ github.event.inputs.gpui-ref || 'main' }}
+          path: .gpui
+          persist-credentials: false
+      - uses: hustcer/setup-moonbit@1522f9aef02a8ca0187dfc00a41f5dd6b16750f7 # v1.23
+        with:
+          version: 0.1.20261012
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Show toolchains
+        run: |
+          moon version --all
+          node --version
+          "$CHROME_BIN" --version
+      - name: Use local gpui.mbt checkout
+        run: ./scripts/use-local-gpui.sh .gpui
+      - name: Check and test portable packages
+        run: |
+          moon check --target js --deny-warn src/model src/scene src/web
+          moon test --target js --deny-warn src/model src/scene
+          moon fmt --check src/model src/scene src/app src/web
+      - name: Build web demo
+        run: ./scripts/build_web.sh
+      - name: Run web smoke
+        run: node scripts/smoke_web.mjs
+      - name: Upload web screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: web-smoke
+          path: build/web-smoke
+          if-no-files-found: warn
+
+  macos-app:
+    name: macOS app build
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check out gpui.mbt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: gpui-mbt/gpui.mbt
+          ref: ${{ github.event.inputs.gpui-ref || 'main' }}
+          path: .gpui
+          persist-credentials: false
+      - uses: hustcer/setup-moonbit@1522f9aef02a8ca0187dfc00a41f5dd6b16750f7 # v1.23
+        with:
+          version: 0.1.20261012
+      - name: Show toolchain
+        run: moon version --all
+      - name: Use local gpui.mbt checkout
+        run: ./scripts/use-local-gpui.sh .gpui
+      - name: Test portable packages
+        run: moon test --target native --deny-warn src/model src/scene
+      - name: Build app bundle
+        run: GPUI_ROOT="$GITHUB_WORKSPACE/.gpui" ./build.sh --build
+      - name: Upload app bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: GpuiMacDemo
+          path: build/GpuiMacDemo.app
+          if-no-files-found: error

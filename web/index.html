@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>gpui.mbt app demo</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <canvas
+        id="demo-canvas"
+        tabindex="0"
+        aria-label="Interactive gpui.mbt proof-of-concept application"
+      ></canvas>
+      <p id="demo-error" class="error" hidden></p>
+    </main>
+    <footer class="hint">
+      <span id="demo-status">Starting…</span>
+      <span>Click the canvas to focus · Cmd/Ctrl+K palette · Tab focus · Wheel scroll</span>
+    </footer>
+    <script type="module" src="./host.js"></script>
+  </body>
+</html>

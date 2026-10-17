@@ -1,0 +1,8 @@
+_build/
+build/
+*.log
+*.pid
+moon.work
+web/moonbit.js
+.gpui/
+gpui.mbt/
