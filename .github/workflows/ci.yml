@@ -140,7 +140,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: gpui-mbt/gpui.mbt
-          ref: ${{ github.event.inputs.gpui-ref || 'feat/20261018-windows-app-runtime' }}
+          ref: ${{ github.event.inputs.gpui-ref || 'main' }}
           path: .gpui
           persist-credentials: false
       - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0

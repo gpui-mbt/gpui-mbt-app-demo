@@ -12,9 +12,9 @@ The demo pins **`f4ah6o/gpui@0.8.0`**. The reusable `app`, `SceneBuilder` and
 - **macOS lane**: uses published MoonBit packages and checks out `gpui.mbt`
   only for the native Objective-C/CoreText shim sources.
 - **Pages**: deploys `web/` to <https://gpui-mbt.github.io/gpui-mbt-app-demo/>.
-- **Windows lane**: checks out gpui.mbt `feat/20261018-windows-app-runtime`
-  (or the selected `gpui-ref`) and creates `windows-app/moon.work` while
-  `platform/windows_app` is unreleased.
+- **Windows lane**: checks out gpui.mbt `main` (or the selected `gpui-ref`)
+  and creates `windows-app/moon.work` while `platform/windows_app` is not in a
+  published package.
 
 ## When bumping gpui.mbt
 
@@ -27,7 +27,8 @@ The demo pins **`f4ah6o/gpui@0.8.0`**. The reusable `app`, `SceneBuilder` and
 
 ## Windows follow-up
 
-After gpui.mbt PR #112 merges and a release contains `platform/windows_app`:
+After a gpui.mbt release contains `platform/windows_app` (PR #112 is merged):
+
 
 1. Bump `moon.mod` to that release.
 2. Change the `windows-app` CI checkout from the feature branch to `main` and
