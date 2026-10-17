@@ -1,8 +1,11 @@
 ///|
-fn demo_run(smoke : Bool) -> DemoUnitResult {
+type AppUnitResult = Result[Unit, @diagnostics.FrameworkError]
+
+///|
+fn demo_run(smoke : Bool) -> AppUnitResult {
   if smoke && @env.get_env_var("GPUI_NATIVE_E2E") != Some("1") {
     return Err(
-      demo_app_error(
+      app_error(
         "smoke", "set GPUI_NATIVE_E2E=1 to enable the window-scoped test hooks",
       ),
     )
@@ -24,7 +27,7 @@ fn demo_run(smoke : Bool) -> DemoUnitResult {
 }
 
 ///|
-fn demo_run_host(host : @macos.Host, smoke : Bool) -> DemoUnitResult {
+fn demo_run_host(host : @macos.Host, smoke : Bool) -> AppUnitResult {
   for
     capability in [
       @platform.NativeWindow,
@@ -48,27 +51,31 @@ fn demo_run_host(host : @macos.Host, smoke : Bool) -> DemoUnitResult {
     Err(error) => return Err(error)
     Ok(value) => value
   }
-  let session = match DemoSession::new(host, window, width, height, scale) {
+  let platform = match macos_demo_platform(host, window) {
     Err(error) => return Err(error)
     Ok(value) => value
   }
-  session.smoke_enabled = smoke
-  let outcome = @gpui_app.run_window(
-    host,
-    window,
-    session,
-    timeout_ms=16,
-    max_ticks=if smoke { Some(3000) } else { None },
-    present_on_start=true,
-  )
-  match outcome {
-    Err(error) => Err(error)
-    Ok(value) =>
-      if smoke && value.reason() == @gpui_app.MaxTicks {
-        Err(demo_app_error("smoke", "smoke flow exceeded its tick bound"))
-      } else {
-        Ok(())
-      }
+  let session = match
+    @native.DemoSession::new(platform, window, width, height, scale) {
+    Err(error) => return Err(error)
+    Ok(value) => value
+  }
+  session.set_smoke(smoke)
+  let outcome = match
+    session.run_on(
+      host,
+      window,
+      timeout_ms=16,
+      max_ticks=if smoke { Some(3000) } else { None },
+      present_on_start=true,
+    ) {
+    Err(error) => return Err(error)
+    Ok(value) => value
+  }
+  if smoke && outcome.reason() == @gpui_app.MaxTicks {
+    Err(app_error("smoke", "smoke flow exceeded its tick bound"))
+  } else {
+    Ok(())
   }
 }
 

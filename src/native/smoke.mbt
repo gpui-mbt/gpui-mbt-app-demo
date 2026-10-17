@@ -13,10 +13,11 @@ fn smoke_dir() -> String {
 
 ///|
 fn smoke_fail(
+  platform : DemoPlatform,
   operation : String,
   message : String,
 ) -> @diagnostics.FrameworkError {
-  demo_app_error(operation, message)
+  demo_app_error(platform, operation, message)
 }
 
 ///|
@@ -76,7 +77,7 @@ fn DemoSession::smoke_key(
   key : @primitives.Key,
   modifiers : @primitives.Modifiers,
 ) -> Unit {
-  match self.host.post_test_key(self.window, key, modifiers) {
+  match (self.platform.host.post_test_key)(key, modifiers) {
     Err(_) => abort("smoke: synthetic key was rejected")
     Ok(_) => ()
   }
@@ -97,7 +98,7 @@ fn DemoSession::smoke_click(
   self : DemoSession,
   point : @primitives.Point,
 ) -> Unit {
-  match self.host.post_test_click(self.window, point) {
+  match (self.platform.host.post_test_click)(point) {
     Err(_) => abort("smoke: synthetic click was rejected")
     Ok(_) => ()
   }
@@ -105,7 +106,7 @@ fn DemoSession::smoke_click(
 
 ///|
 fn DemoSession::smoke_capture(self : DemoSession) -> @testing.FrameCapture {
-  match @testing.capture_frame(self.host, self.window) {
+  match (self.platform.host.capture_frame)() {
     Err(_) => abort("smoke: frame readback was rejected")
     Ok(value) => value
   }
@@ -118,7 +119,9 @@ fn DemoSession::smoke_after_present(
 ) -> DemoUnitResult {
   ignore(metrics)
   if self.smoke_ticks > 2500 {
-    return Err(smoke_fail("smoke", "smoke flow exceeded its tick bound"))
+    return Err(
+      smoke_fail(self.platform, "smoke", "smoke flow exceeded its tick bound"),
+    )
   }
   self.smoke_ticks += 1
   let frame = self.smoke_capture()
@@ -146,7 +149,10 @@ fn DemoSession::smoke_after_present(
       self.smoke_save(frame, "01-overview")
       let region = match self.layout.button(@model.Increment) {
         Some(value) => value
-        None => return Err(smoke_fail("smoke", "increment button is missing"))
+        None =>
+          return Err(
+            smoke_fail(self.platform, "smoke", "increment button is missing"),
+          )
       }
       self.smoke_click(
         @primitives.Point::new(
@@ -164,7 +170,10 @@ fn DemoSession::smoke_after_present(
       self.smoke_save(frame, "02-increment")
       let region = match self.layout.note_field {
         Some(value) => value
-        None => return Err(smoke_fail("smoke", "note field is missing"))
+        None =>
+          return Err(
+            smoke_fail(self.platform, "smoke", "note field is missing"),
+          )
       }
       self.smoke_click(
         @primitives.Point::new(
@@ -225,7 +234,8 @@ fn DemoSession::smoke_after_present(
       self.smoke_save(frame, "06-lists")
       let region = match self.layout.list {
         Some(value) => value
-        None => return Err(smoke_fail("smoke", "list is missing"))
+        None =>
+          return Err(smoke_fail(self.platform, "smoke", "list is missing"))
       }
       self.smoke_click(
         @primitives.Point::new(
@@ -294,7 +304,10 @@ fn DemoSession::smoke_after_present(
       let violet = @model.ThemeColors::for_accent(@model.Violet)
       let region = match self.layout.nav.get(2) {
         Some(value) => value
-        None => return Err(smoke_fail("smoke", "lists navigation is missing"))
+        None =>
+          return Err(
+            smoke_fail(self.platform, "smoke", "lists navigation is missing"),
+          )
       }
       smoke_pixel(
         frame,
@@ -348,7 +361,7 @@ fn DemoSession::smoke_after_present(
         "DEMO_SMOKE PASS shots=\{self.smoke_shot} clicks=\{self.state.clicks} note=\{self.state.note} page=\{self.state.page.label()} accent=\{self.state.accent.label()}",
       )
       self.smoke_stage = 13
-      match self.host.request_close(self.window) {
+      match (self.platform.host.request_close)() {
         Err(error) => Err(error)
         Ok(_) => Ok(())
       }

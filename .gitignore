@@ -7,3 +7,6 @@ web/moonbit.js
 .gpui/
 gpui.mbt/
 .mooncakes/
+windows-app/_build/
+windows-app/build/
+windows-app/moon.work

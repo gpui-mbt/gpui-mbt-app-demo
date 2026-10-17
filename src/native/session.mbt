@@ -50,13 +50,8 @@ type DemoPalette = @command_palette.CommandPalette
 type DemoDocument = @text.TextDocument
 
 ///|
-type DemoTextMeasurement = @text_layout.TextMeasurement
-
-///|
-type DemoTextFieldError = @text_field.TextFieldError
-
-///|
 fn demo_app_error(
+  platform : DemoPlatform,
   operation : String,
   message : String,
 ) -> @diagnostics.FrameworkError {
@@ -64,18 +59,20 @@ fn demo_app_error(
     @diagnostics.InvalidInput,
     operation,
     subsystem="gpui-mbt-app-demo",
-    backend="appkit-metal",
+    backend=platform.backend_label,
     message~,
   )
 }
 
 ///|
 fn demo_text_document(
+  platform : DemoPlatform,
   text : String,
 ) -> Result[DemoDocument, @diagnostics.FrameworkError] {
   match @text.TextDocument::new(text) {
     Ok(value) => Ok(value)
-    Err(_) => Err(demo_app_error("text_document", "malformed text document"))
+    Err(_) =>
+      Err(demo_app_error(platform, "text_document", "malformed text document"))
   }
 }
 
@@ -134,22 +131,19 @@ fn demo_button_kinds() -> Array[@model.ButtonKind] {
 /// One native window application. It owns shared controls and the element tree;
 /// reusable scene/text/runtime mechanics live in gpui.mbt.
 pub struct DemoSession {
-  priv host : @macos.Host
+  priv platform : DemoPlatform
   priv window : @platform.WindowId
   priv mut width : Double
   priv mut height : Double
   priv mut scale : Double
   priv state : @model.DemoState
   priv mut layout : @model.UiLayout
-  priv adapter : @macos_app.MacosTextFieldAdapter
-  priv painter : @macos_app.MacosTextPainter
   priv mut note : @text_field.TextField
   priv mut palette : @command_palette.CommandPalette
   priv mut palette_field_rect : @primitives.Rect
   priv buttons : Array[@button.Button]
   priv mut tree : @element.ElementTree
   priv intents : Ref[Array[String]]
-  priv cursor : @macos_app.CursorState
   priv mut modality : @element.InputModality
   priv mut hovered : UInt64?
   priv mut pointer : @primitives.Point?
@@ -163,67 +157,59 @@ pub struct DemoSession {
 }
 
 ///|
-fn demo_measure_callbacks(
-  adapter : @macos_app.MacosTextFieldAdapter,
-) -> (
-  (DemoDocument) -> Result[DemoTextMeasurement, DemoTextFieldError],
-  (DemoDocument, DemoTextMeasurement) -> Result[Unit, DemoTextFieldError],
-) {
-  let measure = fn(document) { adapter.measure(document) }
-  let admit = fn(document, measurement) { adapter.admit(document, measurement) }
-  (measure, admit)
-}
-
-///|
 fn demo_note_field(
+  platform : DemoPlatform,
   bounds : @primitives.Rect,
-  adapter : @macos_app.MacosTextFieldAdapter,
 ) -> Result[DemoTextField, @diagnostics.FrameworkError] {
-  let document = demo_text_document("")
+  let document = demo_text_document(platform, "")
   let doc = match document {
     Err(error) => return Err(error)
     Ok(value) => value
   }
-  let (measure, admit) = demo_measure_callbacks(adapter)
   match
     @text_field.TextField::new(
       NOTE_FIELD_ID,
       bounds,
       NOTE_FONT_SIZE,
       doc,
-      measure,
-      admit,
+      platform.text.measure_document,
+      platform.text.admit_document,
     ) {
     Ok(value) => Ok(value)
     Err(_) =>
-      Err(demo_app_error("note_field", "TextField rejected the note field"))
+      Err(
+        demo_app_error(
+          platform, "note_field", "TextField rejected the note field",
+        ),
+      )
   }
 }
 
 ///|
 fn demo_palette_field(
+  platform : DemoPlatform,
   bounds : @primitives.Rect,
-  adapter : @macos_app.MacosTextFieldAdapter,
 ) -> Result[DemoTextField, @diagnostics.FrameworkError] {
-  let document = demo_text_document("")
+  let document = demo_text_document(platform, "")
   let doc = match document {
     Err(error) => return Err(error)
     Ok(value) => value
   }
-  let (measure, admit) = demo_measure_callbacks(adapter)
   match
     @text_field.TextField::new(
       PALETTE_FIELD_ID,
       bounds,
       NOTE_FONT_SIZE,
       doc,
-      measure,
-      admit,
+      platform.text.measure_document,
+      platform.text.admit_document,
     ) {
     Ok(value) => Ok(value)
     Err(_) =>
       Err(
-        demo_app_error("palette_field", "TextField rejected the palette field"),
+        demo_app_error(
+          platform, "palette_field", "TextField rejected the palette field",
+        ),
       )
   }
 }
@@ -292,11 +278,11 @@ fn demo_commands(
 
 ///|
 fn demo_create_palette(
+  platform : DemoPlatform,
   bounds : @primitives.Rect,
-  adapter : @macos_app.MacosTextFieldAdapter,
   intents : Ref[Array[String]],
 ) -> Result[DemoPalette, @diagnostics.FrameworkError] {
-  let field = demo_palette_field(bounds, adapter)
+  let field = demo_palette_field(platform, bounds)
   let field = match field {
     Err(error) => return Err(error)
     Ok(value) => value
@@ -304,7 +290,11 @@ fn demo_create_palette(
   match @command_palette.CommandPalette::new(field, demo_commands(intents)) {
     Ok(value) => Ok(value)
     Err(_) =>
-      Err(demo_app_error("palette", "CommandPalette rejected demo commands"))
+      Err(
+        demo_app_error(
+          platform, "palette", "CommandPalette rejected demo commands",
+        ),
+      )
   }
 }
 
@@ -320,8 +310,8 @@ fn demo_placeholder_tree() -> @element.ElementTree {
 }
 
 ///|
-fn DemoSession::new(
-  host : @macos.Host,
+pub fn DemoSession::new(
+  platform : DemoPlatform,
   window : @platform.WindowId,
   width : Double,
   height : Double,
@@ -329,31 +319,17 @@ fn DemoSession::new(
 ) -> Result[DemoSession, @diagnostics.FrameworkError] {
   let state = @model.DemoState::new()
   let layout = @model.layout(state, width, height)
-  let adapter = match @macos_app.MacosTextFieldAdapter::new(NOTE_FONT_SIZE) {
-    Ok(value) => value
-    Err(_) =>
-      return Err(
-        demo_app_error("text_adapter", "CoreText rejected the field style"),
-      )
-  }
-  let painter = match @macos_app.MacosTextPainter::new(512) {
-    Ok(value) => value
-    Err(_) =>
-      return Err(
-        demo_app_error("text_painter", "text painter rejected its cache"),
-      )
-  }
   let note_bounds = match layout.note_field {
     Some(value) => value.bounds
     None => demo_empty_field_rect()
   }
-  let note = match demo_note_field(note_bounds, adapter) {
+  let note = match demo_note_field(platform, note_bounds) {
     Ok(value) => value
     Err(error) => return Err(error)
   }
   let intents : Ref[Array[String]] = Ref([])
   let palette = match
-    demo_create_palette(layout.palette.field, adapter, intents) {
+    demo_create_palette(platform, layout.palette.field, intents) {
     Ok(value) => value
     Err(error) => return Err(error)
   }
@@ -363,7 +339,9 @@ fn DemoSession::new(
       @button.Button::new(kind.id(), demo_empty_field_rect(), kind.label()) {
       Ok(value) => value
       Err(_) =>
-        return Err(demo_app_error("button", "Button rejected a demo action"))
+        return Err(
+          demo_app_error(platform, "button", "Button rejected a demo action"),
+        )
     }
     if kind == @model.Disabled {
       buttons.push(button.with_enabled(false))
@@ -371,28 +349,26 @@ fn DemoSession::new(
       buttons.push(button)
     }
   }
+  let ax_enabled = platform.ax is Some(_)
   let session = {
-    host,
+    platform,
     window,
     width,
     height,
     scale,
     state,
     layout,
-    adapter,
-    painter,
     note,
     palette,
     palette_field_rect: layout.palette.field,
     buttons,
     tree: demo_placeholder_tree(),
     intents,
-    cursor: @macos_app.CursorState::new(),
     modality: @element.InputModality::Mouse,
     hovered: None,
     pointer: None,
     ax_binding: 0L,
-    ax_enabled: true,
+    ax_enabled,
     closing: false,
     smoke_enabled: false,
     smoke_stage: 0,
@@ -403,6 +379,35 @@ fn DemoSession::new(
     Err(error) => Err(error)
     Ok(_) => Ok(session)
   }
+}
+
+///|
+pub fn DemoSession::set_smoke(self : DemoSession, enabled : Bool) -> Unit {
+  self.smoke_enabled = enabled
+}
+
+///|
+pub fn DemoSession::window(self : DemoSession) -> @platform.WindowId {
+  self.window
+}
+
+///|
+pub fn[B : @platform.Backend] DemoSession::run_on(
+  self : DemoSession,
+  host : B,
+  window : @platform.WindowId,
+  timeout_ms~ : Int32 = 16,
+  max_ticks~ : Int32? = None,
+  present_on_start~ : Bool = false,
+) -> Result[@gpui_app.WindowRunOutcome, @diagnostics.FrameworkError] {
+  @gpui_app.run_window(
+    host,
+    window,
+    self,
+    timeout_ms~,
+    max_ticks~,
+    present_on_start~,
+  )
 }
 
 ///|
@@ -435,8 +440,8 @@ fn DemoSession::replace_button(
 ///|
 fn DemoSession::rebuild_palette(self : DemoSession) -> DemoUnitResult {
   let palette = demo_create_palette(
+    self.platform,
     self.layout.palette.field,
-    self.adapter,
     self.intents,
   )
   match palette {
@@ -501,7 +506,10 @@ fn DemoSession::make_tree(
   )
   let palette_button = match self.button(@model.OpenPalette) {
     Some(value) => value
-    None => return Err(demo_app_error("tree", "missing palette button"))
+    None =>
+      return Err(
+        demo_app_error(self.platform, "tree", "missing palette button"),
+      )
   }
   nodes.push(palette_button.element_node(Some(HEADER_NODE_ID)))
   nodes.push(
@@ -578,7 +586,11 @@ fn DemoSession::make_tree(
     Ok(value) => value
     Err(_) =>
       return Err(
-        demo_app_error("tree", "element tree rejected the demo layout"),
+        demo_app_error(
+          self.platform,
+          "tree",
+          "element tree rejected the demo layout",
+        ),
       )
   }
   let fallback = if include_palette {
@@ -672,8 +684,7 @@ fn DemoSession::palette_measure(
   @text_layout.TextMeasurement,
   @text_field.TextFieldError,
 ] {
-  let adapter = self.adapter
-  fn(document) { adapter.measure(document) }
+  self.platform.text.measure_document
 }
 
 ///|
@@ -683,8 +694,7 @@ fn DemoSession::palette_admit(
   Unit,
   @text_field.TextFieldError,
 ] {
-  let adapter = self.adapter
-  fn(document, measurement) { adapter.admit(document, measurement) }
+  self.platform.text.admit_document
 }
 
 ///|
@@ -694,8 +704,7 @@ fn DemoSession::palette_hit(
   @text_layout.TextHit,
   @text_field.TextFieldError,
 ] {
-  let adapter = self.adapter
-  fn(document, point) { adapter.hit(document, point) }
+  self.platform.text.hit_document
 }
 
 ///|
@@ -785,7 +794,11 @@ fn DemoSession::finish_palette_close(
   match self.palette.finish_close(epoch, tree_ref) {
     Err(_) =>
       return Err(
-        demo_app_error("palette_close", "palette could not finish closing"),
+        demo_app_error(
+          self.platform,
+          "palette_close",
+          "palette could not finish closing",
+        ),
       )
     Ok(_) => ()
   }
@@ -804,7 +817,14 @@ fn DemoSession::close_palette(self : DemoSession) -> DemoBoolResult {
     return Ok(false)
   }
   match self.palette.blur() {
-    Err(_) => Err(demo_app_error("palette_close", "palette blur was rejected"))
+    Err(_) =>
+      Err(
+        demo_app_error(
+          self.platform,
+          "palette_close",
+          "palette blur was rejected",
+        ),
+      )
     Ok(effect) =>
       match effect {
         @command_palette.Closed(epoch~, command_id=_) =>
@@ -838,7 +858,13 @@ fn DemoSession::open_palette(self : DemoSession) -> DemoBoolResult {
         Err(error) => return Err(error)
         Ok(_) => ()
       }
-      Err(demo_app_error("palette_open", "CommandPalette refused to open"))
+      Err(
+        demo_app_error(
+          self.platform,
+          "palette_open",
+          "CommandPalette refused to open",
+        ),
+      )
     }
     Ok(_) => {
       self.tree = tree_ref.val
@@ -862,7 +888,9 @@ fn DemoSession::handle_palette_input(
   }
   let handled = match self.palette.handle_input(input, measure, admit, hit) {
     Err(_) =>
-      return Err(demo_app_error("palette_input", "palette rejected input"))
+      return Err(
+        demo_app_error(self.platform, "palette_input", "palette rejected input"),
+      )
     Ok(value) => value
   }
   match handled.effect {
@@ -902,7 +930,7 @@ fn DemoSession::drain_intents(self : DemoSession) -> DemoUnitResult {
       "demo.focus_note" => focus_note = true
       "demo.quit" => {
         self.closing = true
-        match self.host.request_exit() {
+        match (self.platform.host.request_exit)() {
           Err(error) =>
             self.state.set_status("Exit failed: " + error.code().label())
           Ok(_) => self.state.set_status("Quit requested")
@@ -923,7 +951,7 @@ fn DemoSession::drain_intents(self : DemoSession) -> DemoUnitResult {
 
 ///|
 fn DemoSession::copy_text(self : DemoSession, text : String) -> Bool {
-  match self.host.write_clipboard(text) {
+  match (self.platform.host.write_clipboard)(text) {
     Err(error) => {
       self.state.set_status("Clipboard error: " + error.code().label())
       false
@@ -943,7 +971,7 @@ fn DemoSession::copy_summary(self : DemoSession) -> Bool {
 
 ///|
 fn DemoSession::paste_text(self : DemoSession) -> String? {
-  match self.host.read_clipboard() {
+  match (self.platform.host.read_clipboard)() {
     Err(error) => {
       self.state.set_status("Clipboard error: " + error.code().label())
       None
@@ -988,6 +1016,10 @@ fn DemoSession::publish_ax(self : DemoSession) -> Unit {
   if !self.ax_enabled {
     return
   }
+  let ax = match self.platform.ax {
+    None => return
+    Some(value) => value
+  }
   let region = match self.layout.button(@model.Increment) {
     Some(value) => value
     None => {
@@ -999,19 +1031,15 @@ fn DemoSession::publish_ax(self : DemoSession) -> Unit {
     Some(value) => value
     None => return
   }
-  let snapshot = @macos.ButtonAccessibilitySnapshot::new(
-    "Increment counter",
-    region.bounds,
-    button.is_enabled(),
-    button.is_loading(),
-    button.is_focused(),
-    self.state.clicks,
-  )
   match
-    self.host.publish_button_accessibility(
-      self.window,
+    (ax.publish)(
       self.ax_binding,
-      snapshot,
+      "Increment counter",
+      region.bounds,
+      button.is_enabled(),
+      button.is_loading(),
+      button.is_focused(),
+      self.state.clicks,
     ) {
     Err(error) => {
       self.ax_enabled = false
@@ -1025,7 +1053,10 @@ fn DemoSession::publish_ax(self : DemoSession) -> Unit {
 ///|
 fn DemoSession::revoke_ax(self : DemoSession) -> Unit {
   if self.ax_binding != 0L {
-    ignore(self.host.revoke_button_accessibility(self.window, self.ax_binding))
+    match self.platform.ax {
+      Some(ax) => (ax.revoke)(self.ax_binding)
+      None => ()
+    }
     self.ax_binding = 0L
   }
 }
@@ -1035,7 +1066,11 @@ fn DemoSession::poll_ax(self : DemoSession) -> Bool {
   if !self.ax_enabled || self.ax_binding == 0L {
     return false
   }
-  match self.host.take_button_accessibility_request(self.window) {
+  let ax = match self.platform.ax {
+    None => return false
+    Some(value) => value
+  }
+  match (ax.take_request)() {
     Err(_) => {
       self.ax_enabled = false
       false

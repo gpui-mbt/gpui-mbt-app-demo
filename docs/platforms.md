@@ -5,7 +5,7 @@
 | macOS | Working | `src/app` | AppKit + Metal + CoreText |
 | Web | Working preview | `src/web` | Canvas 2D + DOM input |
 | Linux | Planned | TBD | Wayland/X11 + GLES |
-| Windows | Planned | TBD | Win32 + D3D11 |
+| Windows | Working preview | `windows-app/src/windows` | Win32 + D3D11 + DirectWrite |
 
 ## macOS
 
@@ -24,11 +24,20 @@
 - The browser host uses Canvas 2D and a deterministic text approximation. It
   has no IME, native menu bar, general accessibility tree or clipboard bridge.
 
-## Linux / Windows
+## Windows
 
-These entries will be added once dedicated runners are available. The shared
-model and scene already avoid platform-specific imports; each entry needs a
-host loop, input translation, text measurement and a windowing adapter.
+- `windows-app` is a separate MoonBit module using the shared `src/native`
+  controller and `platform/windows_app` for DirectWrite and window startup.
+- `scripts/build_windows.ps1 -Mode smoke` drives the synthetic event queue and
+  frame readback; artifacts go to `build/windows-smoke/`.
+- Physical input, IME and UI Automation are not claimed. One HWND only.
+- `platform/windows_app` is on gpui.mbt main until the next release, so
+  `windows-app` uses its own local `moon.work` override. This keeps the
+  published macOS/Web module independent. See [Windows demo](windows.md).
+
+## Linux
+
+The Linux entry will reuse `src/native` and add a Wayland/X11 host adapter."
 
 ## Support claims
 
