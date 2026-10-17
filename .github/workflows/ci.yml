@@ -36,9 +36,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Show toolchains
+      - name: Show toolchains and update registry
         run: |
           moon version --all
+          moon update
           node --version
           "$CHROME_BIN" --version
       - name: Check and test portable packages
@@ -83,8 +84,10 @@ jobs:
         with:
           version: 0.10.15+943464bfa
           core-version: 0.10.15+943464bfa
-      - name: Show toolchain
-        run: moon version --all
+      - name: Show toolchain and update registry
+        run: |
+          moon version --all
+          moon update
       - name: Test portable packages
         run: moon test --target native --deny-warn src/model src/scene
       - name: Build app bundle
@@ -116,6 +119,8 @@ jobs:
         with:
           version: 0.10.15+943464bfa
           core-version: 0.10.15+943464bfa
+      - name: Update registry
+        run: moon update
       - name: Use gpui.mbt main as a workspace member
         run: ./scripts/use-local-gpui.sh .gpui
       - name: Check portable packages against gpui.mbt main
