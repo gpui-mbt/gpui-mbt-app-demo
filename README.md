@@ -10,6 +10,8 @@ a browser Canvas 2D application, and a Windows Win32 + D3D11 entry. Linux is nex
 
 Live web demo: **https://gpui-mbt.github.io/gpui-mbt-app-demo/**
 
+![Windows overview](docs/screenshots/windows-overview.png)
+
 ## Status
 
 | Platform | Status | Entry | Host |

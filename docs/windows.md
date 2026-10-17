@@ -1,5 +1,7 @@
 # Windows demo
 
+![Windows overview](screenshots/windows-overview.png)
+
 `windows-app` is a separate MoonBit module with an executable entry over the
 shared `src/native` session.
 
