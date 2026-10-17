@@ -54,7 +54,9 @@ development uses a gitignored workspace override:
 
 The override writes `moon.work`, which is ignored by git. `build.sh` and
 `scripts/build_web.sh` create it automatically when a sibling checkout exists.
-CI checks out `gpui.mbt` explicitly and uses the same override.
+CI checks out `gpui.mbt` explicitly and uses the same override. The
+[release and publication checklist](docs/release.md) tracks the switch to the
+published version.
 
 ## macOS
 
