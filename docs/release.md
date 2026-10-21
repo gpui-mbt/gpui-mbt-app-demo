@@ -1,19 +1,19 @@
 # Release and publication checklist
 
-The demo pins **`f4ah6o/gpui@0.10.4`**. The reusable `app`, `SceneBuilder`,
+The demo pins **`f4ah6o/gpui@0.10.5`**. The reusable `app`, `SceneBuilder`,
 `platform/macos_app` and `platform/windows_app` APIs are published as of this
 release.
 
 ## Current lanes
 
-- **Published lane** (push/PR): resolves `0.10.4` from Mooncakes and runs the
+- **Published lane** (push/PR): resolves `0.10.5` from Mooncakes and runs the
   portable checks plus the web smoke.
 - **gpui.mbt main lane** (manual dispatch): checks out `gpui.mbt`, creates a
   local `moon.work`, and tests the demo against framework main.
 - **macOS lane**: uses published MoonBit packages and checks out `gpui.mbt`
   only for the native Objective-C/CoreText shim sources.
 - **Pages**: deploys `web/` to <https://gpui-mbt.github.io/gpui-mbt-app-demo/>.
-- **Windows lane**: resolves gpui.mbt 0.10.4 from Mooncakes and creates a
+- **Windows lane**: resolves gpui.mbt 0.10.5 from Mooncakes and creates a
   module-local `windows-app/moon.work` that includes the sibling demo module.
 
 ## When bumping gpui.mbt
@@ -27,7 +27,7 @@ release.
 
 ## Windows follow-up
 
-`platform/windows_app` is published in 0.10.4. The Windows lane now uses the
+`platform/windows_app` is published in 0.10.5. The Windows lane now uses the
 published package. `-GpuiRoot` remains available for local framework
 development, but is not required.
 
