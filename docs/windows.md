@@ -13,7 +13,7 @@ shared `src/native` session.
   hit testing.
 - `f4ah6o/gpui/platform/windows_app` — reusable `WindowsTextPainter`,
   `WindowsTextFieldAdapter`, `CursorState` and `run_main_window` from the
-  published 0.9.0 package.
+  published 0.10.4 package.
 - `src/native` — shared `DemoSession`, input handling, scene composition and
   smoke driver.
 
@@ -46,5 +46,5 @@ the same scenario as macOS/Web through the event queue:
 
 This is event-queue and frame-readback evidence, not proof of physical input,
 IME, UI Automation, multi-window behavior or DPI-transition correctness. The
-demo uses a single HWND. The Windows lane uses the published 0.9.0 package; see
+demo uses a single HWND. The Windows lane uses the published 0.10.4 package; see
 [release](release.md).
